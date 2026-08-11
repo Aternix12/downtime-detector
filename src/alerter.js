@@ -25,7 +25,7 @@ export function noteResult(result) {
 }
 
 function buildSpokenMessage(result) {
-  const host = (() => {
+  const label = result.name || (() => {
     try {
       return new URL(result.url).hostname;
     } catch {
@@ -33,13 +33,13 @@ function buildSpokenMessage(result) {
     }
   })();
   const reason = (result.error || 'unknown error').replace(/[<>&]/g, ' ').slice(0, 280);
-  return `Aternix downtime detector alert. ${host} is failing. ${reason}. Please investigate.`;
+  return `Aternix downtime detector alert. ${label} is failing. ${reason}. Please investigate.`;
 }
 
 export async function sendDiscord(result) {
   if (!config.discordWebhookUrl) return { skipped: true };
   const body = {
-    content: `🚨 **Downtime detector**\n**URL:** ${result.url}\n**Status:** ${result.status}\n**Error:** ${result.error || 'n/a'}\n**When:** ${result.checkedAt}`,
+    content: `🚨 **Downtime detector**\n**Site:** ${result.name || result.url}\n**URL:** ${result.url}\n**Status:** ${result.status}\n**Error:** ${result.error || 'n/a'}\n**When:** ${result.checkedAt}`,
   };
   const res = await fetch(config.discordWebhookUrl, {
     method: 'POST',

@@ -3,7 +3,7 @@ const state = {
   lastRunAt: null,
   lastDurationMs: null,
   results: [],
-  history: [], // last N summaries
+  history: [],
   alerts: [],
 };
 
@@ -23,12 +23,15 @@ export function setResults(results, durationMs) {
     durationMs,
     ok: results.every((r) => r.ok),
     summary: results.map((r) => ({
+      name: r.name,
       url: r.url,
       ok: r.ok,
       status: r.status,
       error: r.error,
       failedAssets: r.assets?.failed || 0,
       totalAssets: r.assets?.total || 0,
+      failedFunctional: r.functional?.failed || 0,
+      totalFunctional: r.functional?.total || 0,
     })),
   });
   if (state.history.length > MAX_HISTORY) state.history.length = MAX_HISTORY;

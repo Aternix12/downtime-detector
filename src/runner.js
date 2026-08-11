@@ -10,16 +10,18 @@ export async function runChecks({ force = false } = {}) {
   running = true;
   const started = Date.now();
   try {
-    const results = await checkAll(config.targets);
+    const results = await checkAll(config.sites);
     setResults(results, Date.now() - started);
 
     for (const result of results) {
       const { shouldAlert, consecutive } = noteResult(result);
       if (!result.ok) {
-        console.error(`[down] ${result.url} x${consecutive}: ${result.error}`);
+        console.error(`[down] ${result.name || result.url} x${consecutive}: ${result.error}`);
       } else {
+        const fn = result.functional || {};
+        const tag = result.degraded ? 'degraded' : 'ok';
         console.log(
-          `[ok] ${result.url} ${result.status} assets=${result.assets.ok}/${result.assets.total} ${result.ms}ms`
+          `[${tag}] ${result.name || result.url} ${result.status} assets=${result.assets?.ok || 0}/${result.assets?.total || 0} functional=${fn.ok || 0}/${fn.total || 0} ${result.ms}ms${result.error ? ' ' + result.error : ''}`
         );
       }
 
@@ -34,13 +36,20 @@ export async function runChecks({ force = false } = {}) {
           pushAlert({
             type: 'call',
             url: result.url,
+            name: result.name,
             ok: !!call.ok,
             detail: call,
             error: result.error,
           });
           console.log('alert call', call);
         } catch (err) {
-          pushAlert({ type: 'call', url: result.url, ok: false, error: err.message });
+          pushAlert({
+            type: 'call',
+            url: result.url,
+            name: result.name,
+            ok: false,
+            error: err.message,
+          });
           console.error('twilio call failed', err.message);
         }
       }

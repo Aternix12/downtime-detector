@@ -24,7 +24,7 @@
       color: var(--text);
       min-height: 100vh;
     }
-    main { max-width: 980px; margin: 0 auto; padding: 32px 20px 60px; }
+    main { max-width: 1040px; margin: 0 auto; padding: 32px 20px 60px; }
     h1 { margin: 0 0 8px; font-size: 1.6rem; letter-spacing: -0.02em; }
     .sub { color: var(--muted); margin-bottom: 24px; }
     .row { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
@@ -63,12 +63,27 @@
     th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
     th { color: var(--muted); font-weight: 600; }
     a { color: var(--accent); }
+    .fn {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 10px;
+    }
+    .chip {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+    .chip.ok { border-color: rgba(61,220,151,.35); color: #b7f5d7; }
+    .chip.bad { border-color: rgba(255,107,107,.45); color: #ffc9c9; }
   </style>
 </head>
 <body>
   <main>
     <h1>🦞 Aternix Downtime Detector</h1>
-    <div class="sub">HTTP 200 + JS/CSS asset health. Phone alerts on sustained failures.</div>
+    <div class="sub">Root HTTP + JS/CSS assets, plus low-cost functional checks on significant site areas. Phone alerts on sustained failures.</div>
     <div class="row">
       <button id="refresh">Refresh</button>
       <button id="run">Run check now</button>
@@ -100,12 +115,21 @@
 
       const root = document.getElementById('targets');
       root.innerHTML = (data.results || []).map(r => {
-        const cls = r.ok ? 'ok' : 'bad';
+        const cls = r.ok ? (r.degraded ? 'ok' : 'ok') : 'bad';
+        const label = r.ok ? (r.degraded ? 'degraded' : 'up') : 'down';
         const assets = r.assets ? `${r.assets.ok}/${r.assets.total} assets ok` : 'no asset scan';
+        const fn = r.functional ? `${r.functional.ok}/${r.functional.total} functional ok` : 'no functional checks';
+        const chips = ((r.functional && r.functional.items) || []).map(item => {
+          const c = item.ok ? 'ok' : 'bad';
+          const label = escapeHtml(item.name || item.url || 'check');
+          return `<span class="chip ${c}" title="${escapeHtml(item.error || item.url || '')}">${item.ok ? '✓' : '✗'} ${label}</span>`;
+        }).join('');
         return `<div class="card">
-          <div class="status ${cls}"><span class="dot"></span>${r.ok ? 'up' : 'down'}</div>
-          <div style="margin-top:8px;font-size:1.05rem"><a href="${r.url}" target="_blank" rel="noreferrer">${r.url}</a></div>
-          <div class="meta">HTTP <code>${r.status || '—'}</code> · ${r.ms}ms · ${assets}</div>
+          <div class="status ${cls}"><span class="dot"></span>${label}</div>
+          <div style="margin-top:8px;font-size:1.05rem"><strong>${escapeHtml(r.name || r.url)}</strong></div>
+          <div style="margin-top:4px"><a href="${r.url}" target="_blank" rel="noreferrer">${escapeHtml(r.url)}</a></div>
+          <div class="meta">HTTP <code>${r.status || '—'}</code> · ${r.ms}ms · ${assets} · ${fn}</div>
+          ${chips ? `<div class="fn">${chips}</div>` : ''}
           ${r.error ? `<div class="err">${escapeHtml(r.error)}</div>` : ''}
         </div>`;
       }).join('') || '<div class="card meta">Waiting for first check…</div>';
@@ -114,14 +138,22 @@
         return `<tr>
           <td>${new Date(h.at).toLocaleString()}</td>
           <td>${h.ok ? '✅' : '❌'}</td>
-          <td>${(h.summary || []).map(s => `${s.ok ? '✅' : '❌'} ${escapeHtml(new URL(s.url).hostname)}${s.error ? ' — ' + escapeHtml(s.error) : ''}`).join('<br>')}</td>
+          <td>${(h.summary || []).map(s => {
+            const label = escapeHtml(s.name || hostname(s.url));
+            const fn = (s.totalFunctional || 0) ? ` · fn ${s.totalFunctional - (s.failedFunctional || 0)}/${s.totalFunctional}` : '';
+            return `${s.ok ? '✅' : '❌'} ${label}${fn}${s.error ? ' — ' + escapeHtml(s.error) : ''}`;
+          }).join('<br>')}</td>
         </tr>`;
       }).join('');
 
       const alerts = data.alerts || [];
       document.getElementById('alerts').innerHTML = alerts.length
-        ? alerts.slice(0, 10).map(a => `<div>${new Date(a.at).toLocaleString()} · ${a.type} · ${escapeHtml(a.url || '')} · ${a.ok === false ? 'failed' : 'sent'} ${a.error ? '— ' + escapeHtml(typeof a.error === 'string' ? a.error : JSON.stringify(a.error)) : ''}</div>`).join('')
+        ? alerts.slice(0, 10).map(a => `<div>${new Date(a.at).toLocaleString()} · ${a.type} · ${escapeHtml(a.name || a.url || '')} · ${a.ok === false ? 'failed' : 'sent'} ${a.error ? '— ' + escapeHtml(typeof a.error === 'string' ? a.error : JSON.stringify(a.error)) : ''}</div>`).join('')
         : 'None yet';
+    }
+
+    function hostname(url) {
+      try { return new URL(url).hostname; } catch { return url; }
     }
 
     function escapeHtml(s) {

@@ -34,6 +34,11 @@ app.get('/api/status', basicAuth, (_req, res) => {
     ...state,
     config: {
       targets: config.targets,
+      sites: config.sites.map((s) => ({
+        name: s.name,
+        url: s.url,
+        functionalCount: (s.functional || []).length,
+      })),
       cron: config.cron,
       failureThreshold: config.failureThreshold,
       alertCooldownMinutes: config.alertCooldownMinutes,
@@ -73,7 +78,9 @@ cron.schedule(config.cron, () => {
 
 app.listen(config.port, () => {
   console.log(`downtime-detector listening on :${config.port}`);
-  console.log(`targets: ${config.targets.join(', ')}`);
+  console.log(
+    `sites: ${config.sites.map((s) => `${s.name} (${(s.functional || []).length} functional)`).join(' | ')}`
+  );
   console.log(`cron: ${config.cron}`);
   // initial check shortly after boot
   setTimeout(() => {
