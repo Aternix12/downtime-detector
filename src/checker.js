@@ -179,10 +179,6 @@ export async function checkTarget(targetUrl) {
     };
 
     const failureRatio = checked.length ? failed.length / checked.length : 0;
-    const assetsOk = failureRatio <= config.maxAssetFailureRatio && failed.length === 0
-      ? true
-      : failed.length === 0 || failureRatio <= config.maxAssetFailureRatio;
-
     // Default max ratio 0 => any failed asset fails
     const strictAssetsOk = failed.length === 0 || failureRatio <= config.maxAssetFailureRatio;
     result.ok = strictAssetsOk;
