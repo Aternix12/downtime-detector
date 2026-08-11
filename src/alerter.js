@@ -10,28 +10,44 @@ function canCall(target) {
   return Date.now() - last >= cooldownMs;
 }
 
+function isAlertableFailure(result) {
+  // Explicit flag from checker preferred
+  if (typeof result.alertable === 'boolean') return result.alertable;
+  if (result.ok) return false;
+  if (result.degraded) return false;
+  const err = String(result.error || '').toLowerCase();
+  if (err.includes('rate-limited') || err.includes('429') || err.includes('challenged')) {
+    return false;
+  }
+  return true;
+}
+
 export function noteResult(result) {
   const key = result.url;
-  if (result.ok) {
-    consecutiveFails.set(key, 0);
-    return { shouldAlert: false, consecutive: 0 };
+  if (result.ok || !isAlertableFailure(result)) {
+    // healthy or non-alertable noise (rate limits) resets / does not escalate
+    if (result.ok) consecutiveFails.set(key, 0);
+    return { shouldAlert: false, consecutive: consecutiveFails.get(key) || 0, alertable: false };
   }
   const n = (consecutiveFails.get(key) || 0) + 1;
   consecutiveFails.set(key, n);
   return {
     shouldAlert: n >= config.failureThreshold && canCall(key),
     consecutive: n,
+    alertable: true,
   };
 }
 
 function buildSpokenMessage(result) {
-  const label = result.name || (() => {
-    try {
-      return new URL(result.url).hostname;
-    } catch {
-      return result.url;
-    }
-  })();
+  const label =
+    result.name ||
+    (() => {
+      try {
+        return new URL(result.url).hostname;
+      } catch {
+        return result.url;
+      }
+    })();
   const reason = (result.error || 'unknown error').replace(/[<>&]/g, ' ').slice(0, 280);
   return `Aternix downtime detector alert. ${label} is failing. ${reason}. Please investigate.`;
 }
@@ -74,7 +90,7 @@ function escapeXml(s) {
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
-    .replace(/\"/g, "&quot;")
+    .replace(/"/g, "&quot;")
     .replace(/'/g, "&apos;");
 }
 

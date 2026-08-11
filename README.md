@@ -21,8 +21,14 @@ Plus **low-cost functional checks** on significant areas:
   - NZ/PIE funds, resources, insights, about, contact, fund materials, news, FAQs, privacy, stewardship
 - Aternix (`www.aternix.com`)
 
+## Politeness / rate limits
+- Default check interval: every 5 minutes
+- Functional path suite runs every N root checks (default 3)
+- Global request gap + low asset concurrency
+- Cloudflare 429/challenges are **degraded**, not outages, and never trigger phone alerts
+
 ## Alerts
-On sustained failure it places a Twilio voice call to Tristan (`ALERT_PHONE`).
+On sustained *real* failure it places a Twilio voice call to Tristan (`ALERT_PHONE`).
 
 ## Endpoints
 - `GET /` — status dashboard

@@ -118,7 +118,11 @@
         const cls = r.ok ? (r.degraded ? 'ok' : 'ok') : 'bad';
         const label = r.ok ? (r.degraded ? 'degraded' : 'up') : 'down';
         const assets = r.assets ? `${r.assets.ok}/${r.assets.total} assets ok` : 'no asset scan';
-        const fn = r.functional ? `${r.functional.ok}/${r.functional.total} functional ok` : 'no functional checks';
+        const fn = r.functional
+          ? (r.functional.skipped
+              ? `functional skipped (${escapeHtml(r.functional.skipReason || 'scheduled')})`
+              : `${r.functional.ok}/${r.functional.total} functional ok`)
+          : 'no functional checks';
         const chips = ((r.functional && r.functional.items) || []).map(item => {
           const c = item.ok ? 'ok' : 'bad';
           const label = escapeHtml(item.name || item.url || 'check');
