@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Aternix Downtime Detector</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0b1220;
+      --card: #121a2b;
+      --ok: #3ddc97;
+      --bad: #ff6b6b;
+      --muted: #9fb0c7;
+      --line: #22304a;
+      --text: #e8eef8;
+      --accent: #6ea8fe;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      background: radial-gradient(1200px 600px at 10% -10%, #1a2744, transparent), var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    main { max-width: 980px; margin: 0 auto; padding: 32px 20px 60px; }
+    h1 { margin: 0 0 8px; font-size: 1.6rem; letter-spacing: -0.02em; }
+    .sub { color: var(--muted); margin-bottom: 24px; }
+    .row { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
+    button, .pill {
+      background: #1b2740;
+      border: 1px solid var(--line);
+      color: var(--text);
+      border-radius: 999px;
+      padding: 8px 14px;
+      cursor: pointer;
+    }
+    button:hover { border-color: var(--accent); }
+    .card {
+      background: linear-gradient(180deg, #152038, var(--card));
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 16px 18px;
+      margin-bottom: 14px;
+    }
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 0.78rem;
+      letter-spacing: 0.04em;
+    }
+    .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--muted); }
+    .ok .dot { background: var(--ok); box-shadow: 0 0 12px var(--ok); }
+    .bad .dot { background: var(--bad); box-shadow: 0 0 12px var(--bad); }
+    .meta { color: var(--muted); font-size: 0.92rem; margin-top: 8px; line-height: 1.45; }
+    code { color: #c7dbff; }
+    .err { color: #ffb4b4; margin-top: 8px; white-space: pre-wrap; word-break: break-word; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+    th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
+    th { color: var(--muted); font-weight: 600; }
+    a { color: var(--accent); }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>🦞 Aternix Downtime Detector</h1>
+    <div class="sub">HTTP 200 + JS/CSS asset health. Phone alerts on sustained failures.</div>
+    <div class="row">
+      <button id="refresh">Refresh</button>
+      <button id="run">Run check now</button>
+      <span class="pill" id="summary">loading…</span>
+    </div>
+    <div id="targets"></div>
+    <div class="card">
+      <h3 style="margin:0 0 10px">Recent runs</h3>
+      <div style="overflow:auto">
+        <table>
+          <thead><tr><th>When</th><th>OK</th><th>Details</th></tr></thead>
+          <tbody id="history"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card">
+      <h3 style="margin:0 0 10px">Recent alerts</h3>
+      <div id="alerts" class="meta">None yet</div>
+    </div>
+  </main>
+  <script>
+    async function load() {
+      const res = await fetch('/api/status');
+      const data = await res.json();
+      const allOk = (data.results || []).length && data.results.every(r => r.ok);
+      document.getElementById('summary').textContent = data.lastRunAt
+        ? `last run ${new Date(data.lastRunAt).toLocaleString()} · ${allOk ? 'all clear' : 'issues detected'} · ${data.lastDurationMs || 0}ms`
+        : 'no checks yet';
+
+      const root = document.getElementById('targets');
+      root.innerHTML = (data.results || []).map(r => {
+        const cls = r.ok ? 'ok' : 'bad';
+        const assets = r.assets ? `${r.assets.ok}/${r.assets.total} assets ok` : 'no asset scan';
+        return `<div class="card">
+          <div class="status ${cls}"><span class="dot"></span>${r.ok ? 'up' : 'down'}</div>
+          <div style="margin-top:8px;font-size:1.05rem"><a href="${r.url}" target="_blank" rel="noreferrer">${r.url}</a></div>
+          <div class="meta">HTTP <code>${r.status || '—'}</code> · ${r.ms}ms · ${assets}</div>
+          ${r.error ? `<div class="err">${escapeHtml(r.error)}</div>` : ''}
+        </div>`;
+      }).join('') || '<div class="card meta">Waiting for first check…</div>';
+
+      document.getElementById('history').innerHTML = (data.history || []).slice(0, 15).map(h => {
+        return `<tr>
+          <td>${new Date(h.at).toLocaleString()}</td>
+          <td>${h.ok ? '✅' : '❌'}</td>
+          <td>${(h.summary || []).map(s => `${s.ok ? '✅' : '❌'} ${escapeHtml(new URL(s.url).hostname)}${s.error ? ' — ' + escapeHtml(s.error) : ''}`).join('<br>')}</td>
+        </tr>`;
+      }).join('');
+
+      const alerts = data.alerts || [];
+      document.getElementById('alerts').innerHTML = alerts.length
+        ? alerts.slice(0, 10).map(a => `<div>${new Date(a.at).toLocaleString()} · ${a.type} · ${escapeHtml(a.url || '')} · ${a.ok === false ? 'failed' : 'sent'} ${a.error ? '— ' + escapeHtml(typeof a.error === 'string' ? a.error : JSON.stringify(a.error)) : ''}</div>`).join('')
+        : 'None yet';
+    }
+
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, c => ({'&':'&','<':'<','>':'>','"':'"',"'":'''}[c]));
+    }
+
+    document.getElementById('refresh').onclick = load;
+    document.getElementById('run').onclick = async () => {
+      document.getElementById('summary').textContent = 'running check…';
+      await fetch('/api/check', { method: 'POST' });
+      await load();
+    };
+    load();
+    setInterval(load, 30000);
+  </script>
+</body>
+</html>

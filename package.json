@@ -1,0 +1,20 @@
+{
+  "name": "downtime-detector",
+  "version": "1.0.0",
+  "description": "Uptime + JS/CSS asset health monitor with Twilio voice alerts",
+  "main": "src/server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.js",
+    "check": "node src/check-once.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "cheerio": "^1.0.0",
+    "express": "^4.21.2",
+    "node-cron": "^3.0.3",
+    "twilio": "^5.4.0"
+  }
+}
