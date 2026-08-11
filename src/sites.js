@@ -1,6 +1,7 @@
 // Significant areas + low-cost functional path checks per site.
 // Full JS/CSS asset scan runs on the site root only.
 // Functional paths: HTTP 200, real HTML, not soft-404, optional title/body markers.
+// Keep these suites small to avoid Cloudflare rate limits (esp. Direct).
 
 export const DEFAULT_SITES = [
   {
@@ -26,39 +27,9 @@ export const DEFAULT_SITES = [
         titleIncludes: ['Super', 'Bendigo'],
       },
       {
-        path: '/resources/',
-        name: 'Investor resources',
-        titleIncludes: ['Resource', 'Investor', 'Betashares'],
-      },
-      {
-        path: '/education/',
-        name: 'Education / resources',
-        titleIncludes: ['Education', 'Resource', 'Betashares', 'ETF'],
-      },
-      {
-        path: '/category/',
-        name: 'ETF categories',
-        titleIncludes: ['ETF', 'Categor', 'Betashares', 'Fund'],
-      },
-      {
-        path: '/about-us/',
-        name: 'About us',
-        titleIncludes: ['About', 'Betashares'],
-      },
-      {
         path: '/contact/',
         name: 'Contact',
         titleIncludes: ['Contact', 'Betashares'],
-      },
-      {
-        path: '/news/',
-        name: 'News',
-        titleIncludes: ['News', 'Betashares'],
-      },
-      {
-        path: '/privacy-policy/',
-        name: 'Privacy policy',
-        titleIncludes: ['Privacy'],
       },
     ],
   },
@@ -66,12 +37,12 @@ export const DEFAULT_SITES = [
     name: 'Betashares Direct',
     url: 'https://www.betashares.com.au/direct',
     checkAssets: true,
+    // Direct is CF-sensitive — keep this especially small
     functional: [
       {
         path: '/direct/pricing',
         name: 'Pricing',
         titleIncludes: ['Pricing', 'Direct'],
-        bodyIncludes: ['Pricing', 'brokerage', 'fee'],
       },
       {
         path: '/direct/faq',
@@ -82,41 +53,6 @@ export const DEFAULT_SITES = [
         path: '/direct/auto-invest',
         name: 'Auto-invest',
         titleIncludes: ['Auto', 'Invest', 'Direct'],
-      },
-      {
-        path: '/direct/account-types',
-        name: 'Account types',
-        titleIncludes: ['Account', 'Direct'],
-      },
-      {
-        path: '/direct/brokerage-free',
-        name: 'Brokerage-free ETFs & shares',
-        titleIncludes: ['Brokerage', 'Direct', 'ETF'],
-      },
-      {
-        path: '/direct/managed-portfolios',
-        name: 'Managed portfolios',
-        titleIncludes: ['Managed', 'Portfolio', 'Direct'],
-      },
-      {
-        path: '/direct/tools-and-reporting',
-        name: 'Tools & reporting',
-        titleIncludes: ['Tool', 'Report', 'Direct'],
-      },
-      {
-        path: '/direct/investment-options',
-        name: 'Investment options',
-        titleIncludes: ['Investment', 'Direct', 'Option'],
-      },
-      {
-        path: '/direct/transfer-holdings',
-        name: 'Transfer holdings',
-        titleIncludes: ['Transfer', 'Direct', 'Portfolio'],
-      },
-      {
-        path: '/direct/custom-portfolios',
-        name: 'Custom portfolios',
-        titleIncludes: ['Custom', 'Portfolio', 'Direct'],
       },
     ],
   },
@@ -131,24 +67,9 @@ export const DEFAULT_SITES = [
         titleIncludes: ['NZ', 'Fund', 'PIE', 'Betashares'],
       },
       {
-        path: '/pie-funds/',
-        name: 'PIE funds',
-        titleIncludes: ['PIE', 'Fund', 'NZ', 'Betashares'],
-      },
-      {
         path: '/resources/',
         name: 'Resources',
         titleIncludes: ['Resource', 'Betashares'],
-      },
-      {
-        path: '/insights/',
-        name: 'Insights / knowledge',
-        titleIncludes: ['Insight', 'Knowledge', 'Betashares', 'Market'],
-      },
-      {
-        path: '/about-us/',
-        name: 'About us',
-        titleIncludes: ['About', 'Betashares'],
       },
       {
         path: '/contact/',
@@ -156,29 +77,9 @@ export const DEFAULT_SITES = [
         titleIncludes: ['Contact', 'Betashares'],
       },
       {
-        path: '/fund-materials/',
-        name: 'Fund materials',
-        titleIncludes: ['Fund', 'Material', 'Betashares'],
-      },
-      {
-        path: '/news/',
-        name: 'News',
-        titleIncludes: ['News', 'Betashares'],
-      },
-      {
-        path: '/education/frequently-asked-questions/',
-        name: 'FAQs',
-        titleIncludes: ['FAQ', 'Question', 'Betashares'],
-      },
-      {
-        path: '/privacy-policy/',
-        name: 'Privacy policy',
-        titleIncludes: ['Privacy'],
-      },
-      {
-        path: '/stewardship/',
-        name: 'ESG / stewardship',
-        titleIncludes: ['Steward', 'ESG', 'Betashares'],
+        path: '/about-us/',
+        name: 'About us',
+        titleIncludes: ['About', 'Betashares'],
       },
     ],
   },
@@ -224,7 +125,6 @@ export function resolveSites(envTargets) {
       return { ...known, url, functional: [...(known.functional || [])] };
     }
 
-    // Match by host+path prefix for slight variants
     const hit = DEFAULT_SITES.find((s) => {
       const base = normalizeUrl(s.url);
       return url === base || url.startsWith(base + '/');

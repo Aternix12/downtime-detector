@@ -14,11 +14,11 @@ Plus **low-cost functional checks** on significant areas:
 
 ## Default sites
 - Betashares AU (`www.betashares.com.au`)
-  - fund list, sample fund, super, resources, insights, education, about, contact, news, privacy
+  - fund list, sample fund A200, super, contact
 - Betashares Direct (`/direct`)
-  - pricing, faq, auto-invest, account types, brokerage-free, portfolios, tools, transfers
+  - pricing, faq, auto-invest *(kept tiny — CF sensitive)*
 - Betashares NZ (`www.betashares.co.nz`)
-  - NZ/PIE funds, resources, insights, about, contact, fund materials, news, FAQs, privacy, stewardship
+  - NZ funds, resources, contact, about
 - Aternix (`www.aternix.com`)
 
 ## Politeness / rate limits
