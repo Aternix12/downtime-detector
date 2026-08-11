@@ -10,6 +10,7 @@ export const config = {
   port: Number(process.env.PORT || 3000),
   targets: splitList(process.env.TARGETS, [
     'https://www.betashares.com.au',
+    'https://www.betashares.com.au/direct',
     'https://www.aternix.com',
   ]),
   cron: process.env.CHECK_INTERVAL_CRON || '*/2 * * * *',

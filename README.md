@@ -12,6 +12,7 @@ On sustained failure it places a Twilio voice call to Tristan (`ALERT_PHONE`).
 
 ## Targets (default)
 - https://www.betashares.com.au
+- https://www.betashares.com.au/direct
 - https://www.aternix.com
 
 ## Endpoints
