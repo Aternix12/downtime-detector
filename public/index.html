@@ -125,7 +125,8 @@
     }
 
     function escapeHtml(s) {
-      return String(s).replace(/[&<>"']/g, c => ({'&':'&','<':'<','>':'>','"':'"',"'":'''}[c]));
+      const map = { "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&apos;" };
+      return String(s).replace(/[&<>"']/g, c => map[c]);
     }
 
     document.getElementById('refresh').onclick = load;
